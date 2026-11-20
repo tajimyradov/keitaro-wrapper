@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adrobot · Keitaro</title>
+<style>
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1c2226;--mute:#6b7378;--line:#dcdad3;--accent:#0d6b5f;--accent-ink:#fff;--bad:#b3321f;--good:#1d7a46;
+--font:"Segoe UI","Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--font)}
+header{background:var(--panel);border-bottom:1px solid var(--line)}
+.bar{max-width:920px;margin:0 auto;padding:0 20px;display:flex;gap:28px;align-items:end}
+.bar b{font-size:17px;padding:16px 0}
+nav{display:flex;gap:4px}
+nav button{border:0;background:none;font:inherit;padding:18px 12px 14px;color:var(--mute);cursor:pointer;border-bottom:3px solid transparent}
+nav button[aria-selected=true]{color:var(--ink);border-color:var(--accent);font-weight:600}
+main{max-width:920px;margin:24px auto;padding:0 20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px}
+h2{margin:0 0 16px;font-size:18px}
+label{display:block;font-weight:600;margin:14px 0 5px}
+.hint{font-weight:400;color:var(--mute);font-size:13px}
+input,select{width:100%;font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.prefix{display:flex;align-items:stretch}
+.prefix span{padding:9px 10px;background:#eceae4;border:1px solid var(--line);border-right:0;border-radius:4px 0 0 4px;color:var(--mute);white-space:nowrap}
+.prefix input{border-radius:0 4px 4px 0}
+button.primary{background:var(--accent);color:var(--accent-ink);border:0;border-radius:4px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer;margin-top:20px}
+button.primary:disabled{opacity:.5;cursor:wait}
+button.link{background:none;border:0;color:var(--bad);cursor:pointer;font:inherit;padding:4px 6px}
+.pick{position:relative}
+.pick ul{position:absolute;z-index:5;left:0;right:0;margin:2px 0 0;padding:0;list-style:none;background:#fff;border:1px solid var(--line);border-radius:4px;max-height:240px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.pick li{padding:8px 10px;cursor:pointer}.pick li:hover,.pick li.on{background:#e7f1ef}
+.pick li small{color:var(--mute)}
+.chosen{margin-top:6px;font-size:13px;color:var(--good)}
+.msg{margin-top:16px;padding:10px 12px;border-radius:4px;display:none}
+.msg.ok{display:block;background:#e5f3ea;color:#14582f}.msg.err{display:block;background:#fbe9e5;color:var(--bad)}
+.stream{border:1px solid var(--line);border-radius:6px;margin-top:14px;overflow:hidden}
+.stream>header{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;background:#faf9f6;border-bottom:1px solid var(--line)}
+.stream .body{padding:12px 14px}
+.stats{color:var(--mute);font-size:13px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;margin:6px 0}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--mute);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tfoot td{font-weight:600;border-bottom:0}
+.sumbad{color:var(--bad)}
+.add{display:flex;gap:10px;margin-top:10px;align-items:start}.add .pick{flex:1}.add button{margin-top:0}
+.tag{display:inline-block;background:#eceae4;border-radius:3px;padding:1px 7px;font-size:13px;margin-right:4px}
+.empty{color:var(--mute)}
+.stream.dirty{background:#fff8d6;border-color:#d9bd3f}
+.stream.dirty>header{background:#fbefae;border-bottom-color:#d9bd3f}
+.badge{font-size:13px;color:#7a5d00;margin-left:8px}
+.hd{display:flex;gap:8px;align-items:center}
+button.sm{font:inherit;font-size:14px;padding:5px 12px;border-radius:4px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+button.sm.main{background:var(--accent);border-color:var(--accent);color:#fff}
+button.sm.on{background:#e7f1ef;border-color:var(--accent);color:var(--accent)}
+tr.gone td{color:#9a9a96;background:#f1f0ec}
+.fetchrow{display:flex;gap:10px}.fetchrow select{flex:1}.fetchrow button{margin-top:0}
+#loader{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;display:none;align-items:center;gap:10px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+#loader.on{display:flex}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+body.busy button{pointer-events:none;opacity:.6}
+@media(max-width:640px){.row{grid-template-columns:1fr}.bar{gap:8px;flex-wrap:wrap}}
+@media(prefers-reduced-motion:no-preference){button{transition:opacity .15s}}
+</style>
+</head>
+<body>
+<header><div class="bar"><b>Adrobot</b>
+<nav role="tablist"><button role="tab" id="t-create" aria-selected="true">Новая кампания</button><button role="tab" id="t-edit" aria-selected="false">Редактор офферов</button></nav></div></header>
+<div id="loader" role="status" aria-live="polite"><span class="spin"></span><span id="loader-text">Загрузка…</span></div>
+<main>
+<section class="panel" id="create">
+  <h2>Новая кампания</h2>
+  <div class="msg" id="meta-msg" role="alert"></div>
+  <label for="name">Название</label>
+  <div class="prefix"><span id="prefix"></span><input id="name" placeholder="campaign1" autocomplete="off"></div>
+  <label for="geo">Гео <span class="hint">коды стран через запятую</span></label>
+  <input id="geo" placeholder="MX,AU,RO" autocomplete="off">
+  <label for="offer">Оффер <span class="hint">поиск по названию или ID</span></label>
+  <div class="pick" id="pick-create"><input id="offer" placeholder="Начните вводить название" autocomplete="off"><ul hidden></ul></div>
+  <div class="chosen" id="chosen"></div>
+  <div class="row">
+    <div><label for="domain">Домен</label><select id="domain"></select></div>
+    <div><label for="group">Группа</label><select id="group"></select></div>
+    <div><label for="source">Источник</label><select id="source"></select></div>
+  </div>
+  <button class="primary" id="create-btn">Создать кампанию</button>
+  <div class="msg" id="create-msg" role="status"></div>
+</section>
+
+<section class="panel" id="edit" hidden>
+  <h2>Редактор офферов</h2>
+  <label for="camp">Кампания</label>
+  <div class="fetchrow"><select id="camp"></select><button class="primary" id="fetch">Получить потоки</button></div>
+  <div class="msg" id="edit-msg" role="status"></div>
+  <div id="streams"></div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, ...kids) => {
+  const n = Object.assign(document.createElement(tag), props);
+  kids.flat().forEach(k => n.append(k));
+  return n;
+};
+let pending = 0;
+function busy(delta, text) {
+  pending += delta;
+  document.body.classList.toggle('busy', pending > 0);
+  $('#loader').classList.toggle('on', pending > 0);
+  if (text) $('#loader-text').textContent = text;
+}
+const labelFor = (path, method) =>
+  path.endsWith('/fetch') ? 'Получаем потоки из Keitaro…'
+  : path.endsWith('/push') ? 'Публикуем изменения в Keitaro…'
+  : path === '/campaigns' && method === 'POST' ? 'Создаём кампанию в Keitaro…'
+  : path === '/meta' ? 'Загружаем справочники Keitaro…' : 'Загрузка…';
+
+async function api(path, opts = {}, quiet = false) {
+  if (!quiet) busy(1, labelFor(path, opts.method || 'GET'));
+  try {
+    const r = await fetch('/api' + path, {headers: {'Content-Type': 'application/json'}, ...opts});
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof data.detail === 'string' ? data.detail
+      : Array.isArray(data.detail) ? data.detail.map(d => d.msg).join('; ') : 'Ошибка ' + r.status);
+    return data;
+  } finally { if (!quiet) busy(-1); }
+}
+function say(box, text, ok) { box.className = 'msg ' + (ok ? 'ok' : 'err'); box.textContent = text; }
+const fmt = v => v == null ? '–' : v;
+
+/* автокомплит офферов */
+function picker(root, onPick) {
+  const input = root.querySelector('input'), list = root.querySelector('ul');
+  let timer, items = [], idx = -1;
+  const close = () => { list.hidden = true; idx = -1; };
+  const choose = o => { close(); input.value = o.name; onPick(o); };
+  const draw = () => {
+    list.replaceChildren(...items.map((o, i) => {
+      const li = el('li', {className: i === idx ? 'on' : ''}, o.name + ' ', el('small', {}, '#' + o.id));
+      li.onmousedown = e => { e.preventDefault(); choose(o); };
+      return li;
+    }));
+    list.hidden = !items.length;
+  };
+  input.addEventListener('input', () => {
+    onPick(null);
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try { items = await api('/offers?q=' + encodeURIComponent(input.value), {}, true); } catch { items = []; }
+      idx = -1; draw();
+    }, 200);
+  });
+  input.addEventListener('focus', () => input.dispatchEvent(new Event('input')));
+  input.addEventListener('blur', close);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { idx = Math.min(idx + 1, items.length - 1); draw(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { idx = Math.max(idx - 1, 0); draw(); e.preventDefault(); }
+    else if (e.key === 'Enter' && items[idx]) { choose(items[idx]); e.preventDefault(); }
+    else if (e.key === 'Escape') close();
+  });
+  return {reset: () => { input.value = ''; onPick(null); }};
+}
+
+/* вкладки */
+function tab(name) {
+  for (const t of ['create', 'edit']) {
+    $('#' + t).hidden = t !== name;
+    $('#t-' + t).setAttribute('aria-selected', t === name);
+  }
+  if (name === 'edit') loadCampaigns();
+}
+$('#t-create').onclick = () => tab('create');
+$('#t-edit').onclick = () => tab('edit');
+
+/* создание */
+let chosenOffer = null;
+const createPick = picker($('#pick-create'), o => {
+  chosenOffer = o;
+  $('#chosen').textContent = o ? `Выбран оффер #${o.id}: ${o.name}` : '';
+});
+
+function fill(sel, items) {
+  sel.replaceChildren(...items.map(i => el('option', {value: i.id, textContent: i.name})));
+}
+async function init() {
+  try {
+    const m = await api('/meta');
+    $('#prefix').textContent = m.prefix;
+    fill($('#domain'), m.domains); fill($('#group'), m.groups); fill($('#source'), m.sources);
+    const labels = {domains: 'домены', groups: 'группы', sources: 'источники'};
+    const empty = Object.keys(labels).filter(k => m.errors[k] || !m[k].length);
+    if (empty.length) say($('#meta-msg'), 'Не загрузились: ' + empty.map(k => labels[k] + (m.errors[k] ? ` (${m.errors[k]})` : ' (список пуст)')).join('; '), false);
+  } catch (e) { say($('#meta-msg'), 'Не удалось загрузить справочники: ' + e.message, false); }
+}
+
+$('#create-btn').onclick = async () => {
+  const btn = $('#create-btn'), box = $('#create-msg');
+  if (!$('#name').value.trim()) return say(box, 'Укажите название кампании', false);
+  if (!$('#geo').value.trim()) return say(box, 'Укажите гео, например MX,AU', false);
+  if (!chosenOffer) return say(box, 'Выберите оффер из списка', false);
+  if (!$('#domain').value || !$('#group').value || !$('#source').value) return say(box, 'Выберите домен, группу и источник (список пуст: см. сообщение вверху формы, обновите страницу)', false);
+  btn.disabled = true;
+  try {
+    const c = await api('/campaigns', {method: 'POST', body: JSON.stringify({
+      name: $('#name').value, geo: $('#geo').value, offer_id: chosenOffer.id,
+      domain_id: +$('#domain').value, group_id: +$('#group').value, traffic_source_id: +$('#source').value})});
+    say(box, `Кампания создана: ${c.name} (ID ${c.id}), гео ${c.geo.join(', ')}`, true);
+    $('#name').value = ''; $('#geo').value = ''; createPick.reset();
+  } catch (e) { say(box, e.message, false); }
+  btn.disabled = false;
+};
+
+/* редактор */
+const cid = () => $('#camp').value;
+const hint = t => $('#streams').replaceChildren(el('p', {className: 'empty'}, t));
+
+async function loadCampaigns() {
+  const sel = $('#camp'), keep = sel.value;
+  try {
+    const list = await api('/campaigns');
+    sel.replaceChildren(...list.map(c => el('option', {value: c.id, textContent: `${c.name} (#${c.id})`})));
+    if (keep && list.some(c => String(c.id) === keep)) sel.value = keep;
+    list.length ? loadLocal() : hint('Кампаний с вашим префиксом пока нет. Создайте первую на вкладке «Новая кампания».');
+  } catch (e) { say($('#edit-msg'), e.message, false); }
+}
+async function loadLocal() {
+  const v = await api(`/campaigns/${cid()}/streams`);
+  v.streams.length ? render(v) : hint('Потоки ещё не загружены. Нажмите «Получить потоки».');
+}
+$('#camp').onchange = () => { $('#edit-msg').className = 'msg'; loadLocal().catch(e => say($('#edit-msg'), e.message, false)); };
+$('#fetch').onclick = () => change(api(`/campaigns/${cid()}/fetch`, {method: 'POST'}), 'Потоки получены из Keitaro');
+
+async function change(promise, text) {
+  const box = $('#edit-msg');
+  try { render(await promise); say(box, text, true); } catch (e) { say(box, e.message, false); }
+}
+const render = v => $('#streams').replaceChildren(...v.streams.map(streamCard));
+
+function streamCard(s) {
+  const base = `/campaigns/${cid()}/streams/${s.id}`;
+  const head = el('header', {}, el('div', {}, el('b', {}, s.name), s.dirty ? el('span', {className: 'badge'}, 'не опубликовано') : ''));
+  const card = el('div', {className: 'stream' + (s.dirty ? ' dirty' : '')}, head);
+  if (!s.editable) return card;                       // поток без офферов: только название
+
+  if (s.dirty) {
+    const push = el('button', {className: 'sm main', textContent: 'Опубликовать'});
+    push.onclick = () => change(api(base + '/push', {method: 'POST'}), 'Изменения опубликованы в Keitaro');
+    const cancel = el('button', {className: 'sm', textContent: 'Отмена'});
+    cancel.onclick = () => change(api(base + '/cancel', {method: 'POST'}), 'Изменения отменены');
+    head.append(el('div', {className: 'hd'}, push, cancel));
+  }
+  const rows = s.offers.map(o => {
+    const gone = o.status === 'removed';
+    const pin = el('button', {className: 'sm' + (o.pinned ? ' on' : ''), textContent: o.pinned ? 'Закреплён' : 'Закрепить', disabled: gone || o.share <= 0});
+    pin.onclick = () => change(api(`${base}/offers/${o.offer_id}/pin`, {method: 'PUT', body: JSON.stringify({pinned: !o.pinned})}),
+      o.pinned ? 'Вес откреплён, доли пересчитаны' : 'Вес закреплён');
+    const act = gone
+      ? el('button', {className: 'sm', textContent: 'Вернуть'})
+      : el('button', {className: 'link', textContent: 'Удалить'});
+    act.onclick = () => gone
+      ? change(api(`${base}/offers/${o.offer_id}/restore`, {method: 'POST'}), `Оффер #${o.offer_id} возвращён`)
+      : change(api(`${base}/offers/${o.offer_id}`, {method: 'DELETE'}), `Оффер #${o.offer_id} удалён`);
+    return el('tr', {className: gone ? 'gone' : ''}, el('td', {}, `[${o.offer_id}] ${o.name}`, o.is_new ? el('span', {className: 'badge'}, 'новый') : ''),
+      el('td', {className: 'n'}, o.share + '%'), el('td', {}, pin), el('td', {}, act));
+  });
+  const ok = s.share_total === 100;
+  const body = el('div', {className: 'body'}, el('table', {},
+    el('thead', {}, el('tr', {}, el('th', {}, 'Оффер'), el('th', {className: 'n'}, 'Доля'), el('th'), el('th'))),
+    el('tbody', {}, rows),
+    el('tfoot', {}, el('tr', {}, el('td', {}, 'Сумма активных'), el('td', {className: 'n' + (ok ? '' : ' sumbad')}, s.share_total + '%'), el('td'), el('td')))));
+
+  let pick = null;
+  const wrap = el('div', {className: 'pick'}, el('input', {placeholder: 'Найти оффер по названию или ID', autocomplete: 'off'}), el('ul', {hidden: true}));
+  picker(wrap, o => pick = o);
+  const add = el('button', {className: 'primary', textContent: 'Добавить'});
+  add.onclick = () => pick
+    ? change(api(base + '/offers', {method: 'POST', body: JSON.stringify({offer_id: pick.id})}), `Оффер #${pick.id} добавлен, доли пересчитаны`)
+    : say($('#edit-msg'), 'Выберите оффер из списка', false);
+  body.append(el('div', {className: 'add'}, wrap, add));
+  card.append(body);
+  return card;
+}
+
+init();
+</script>
+</body>
+</html>
